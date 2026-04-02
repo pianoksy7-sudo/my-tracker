@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#faf8f4">
+<title>My Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#faf8f4;--card:#ffffff;--ink:#1c1a17;--ink2:#5c574f;--ink3:#a09890;
+  --accent:#c9a97e;--accent2:#8fb8a0;--red:#e07070;--yellow:#e8c84a;
+  --green:#6dab86;--blue:#7aaed4;--gray:#b0aaa3;--border:#ede8e0;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06);--shadow:0 2px 12px rgba(0,0,0,0.08);
+  --r:16px;--r-sm:10px;--nav-h:68px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);height:100%;overflow:hidden;}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transform:translateX(24px);transition:opacity .22s ease,transform .22s ease;overflow:hidden;}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0);}
+.topbar{display:flex;align-items:center;gap:12px;padding:52px 20px 12px;background:var(--bg);flex-shrink:0;}
+.topbar-title{font-family:'Gowun Batang',serif;font-size:22px;font-weight:700;color:var(--ink);flex:1;}
+.topbar-sub{font-size:10px;color:var(--ink3);font-family:'DM Mono',monospace;letter-spacing:1px;flex-shrink:0;}
+.back-btn{width:36px;height:36px;background:var(--card);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;box-shadow:var(--shadow-sm);transition:transform .12s;}
+.back-btn:active{transform:scale(.9);}
+.scroll-area{flex:1;overflow-y:auto;padding:8px 20px 90px;-webkit-overflow-scrolling:touch;}
+.scroll-area::-webkit-scrollbar{display:none;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:rgba(250,248,244,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom);z-index:100;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 18px;border-radius:12px;min-width:70px;}
+.nav-icon{font-size:22px;line-height:1;transition:transform .18s;}
+.nav-label{font-size:10px;color:var(--ink3);font-weight:500;transition:color .18s;}
+.nav-item.active .nav-icon{transform:scale(1.18);}
+.nav-item.active .nav-label{color:var(--accent);font-weight:700;}
+/* hero */
+.month-hero{background:var(--ink);border-radius:var(--r);padding:22px 22px 20px;margin-bottom:14px;position:relative;overflow:hidden;}
+.month-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(201,169,126,.12);}
+.hero-date{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.45);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
+.hero-title{font-family:'Gowun Batang',serif;font-size:26px;font-weight:700;color:#fff;line-height:1.1;}
+.hero-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:4px;}
+/* month nav */
+.month-nav-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px;}
+.mnav-btn{width:34px;height:34px;background:var(--card);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;box-shadow:var(--shadow-sm);transition:transform .12s;}
+.mnav-btn:active{transform:scale(.9);}
+.mnav-lbl{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink2);font-weight:500;min-width:90px;text-align:center;}
+/* cat grid */
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.cat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px 16px 16px;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .12s;position:relative;overflow:hidden;}
+.cat-card:active{transform:scale(.97);}
+.cat-icon{font-size:26px;margin-bottom:8px;display:block;}
+.cat-name{font-size:12px;font-weight:500;color:var(--ink2);}
+.cat-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--ink);margin-top:5px;line-height:1;}
+.cat-unit{font-size:10px;color:var(--ink3);margin-left:2px;}
+.cat-full{grid-column:1/-1;}
+/* detail month tab */
+.det-month-tab{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+.det-month-lbl{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--ink2);}
+.det-month-nav{display:flex;gap:6px;}
+.det-month-nav button{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .12s;}
+.det-month-nav button:active{background:var(--border);}
+/* summary bar */
+.sum-bar{background:var(--ink);border-radius:var(--r-sm);padding:14px 16px;display:flex;justify-content:space-around;margin-bottom:12px;}
+.sum-item{text-align:center;}
+.sum-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#fff;}
+.sum-lbl{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px;}
+/* day grid */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--shadow-sm);margin-bottom:10px;}
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.day-cell{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.day-num{font-size:8px;font-family:'DM Mono',monospace;color:var(--ink3);line-height:1;}
+.day-inp{width:100%;aspect-ratio:1;border:1.5px solid var(--border);border-radius:6px;background:transparent;font-family:'DM Mono',monospace;font-size:10px;text-align:center;outline:none;color:var(--ink);transition:border-color .12s,background .12s;padding:0;min-width:0;}
+.day-inp:focus{border-color:var(--accent);background:#fffaf3;}
+.day-inp.filled{border-color:var(--accent2);background:#f2faf5;}
+.day-inp.today{border-color:var(--accent);font-weight:700;}
+.conv{font-size:7px;color:var(--accent);font-family:'DM Mono',monospace;line-height:1;min-height:9px;text-align:center;}
+/* signal */
+.sig-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.sig-cell{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.sig-btn{width:100%;aspect-ratio:1;border:1.5px solid var(--border);border-radius:6px;background:transparent;font-size:9px;font-family:'DM Mono',monospace;color:var(--ink3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;user-select:none;}
+.sig-btn:active{transform:scale(.88);}
+.sig-btn.s-gray{background:var(--gray);border-color:var(--gray);color:#fff;}
+.sig-btn.s-green{background:var(--green);border-color:var(--green);color:#fff;}
+.sig-btn.s-yellow{background:var(--yellow);border-color:var(--yellow);color:#fff;}
+.sig-btn.s-blue{background:var(--blue);border-color:var(--blue);color:#fff;}
+.sig-btn.s-red{background:var(--red);border-color:var(--red);color:#fff;}
+.sig-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink3);font-family:'DM Mono',monospace;}
+.leg-dot{width:10px;height:10px;border-radius:3px;}
+/* habit */
+.habit-list{display:flex;flex-direction:column;gap:8px;}
+.habit-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;box-shadow:var(--shadow-sm);}
+.habit-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.habit-name{font-size:13px;font-weight:500;}
+.habit-score{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink3);}
+.hchecks{display:flex;flex-wrap:wrap;gap:4px;}
+.hchk{width:22px;height:22px;border:1.5px solid var(--border);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;transition:all .12s;background:transparent;user-select:none;}
+.hchk.done{background:var(--accent2);border-color:var(--accent2);}
+.hchk.done::after{content:'✓';}
+.prog-row{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.prog-track{flex:1;height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+.prog-lbl{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);flex-shrink:0;}
+/* reading */
+.reading-row{display:flex;align-items:center;justify-content:space-between;}
+.reading-inp{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;border:none;border-bottom:2px solid var(--border);background:transparent;width:90px;outline:none;text-align:right;color:var(--ink);transition:border-color .12s;}
+.reading-inp:focus{border-color:var(--accent);}
+/* history charts */
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+.chart-title{font-size:11px;color:var(--ink3);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;}
+.bar-chart{display:flex;align-items:flex-end;gap:3px;height:80px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;}
+.bar-track{flex:1;width:100%;background:var(--border);border-radius:4px 4px 0 0;position:relative;overflow:hidden;}
+.bar-fill{position:absolute;bottom:0;left:0;right:0;border-radius:4px 4px 0 0;transition:height .5s cubic-bezier(.34,1.56,.64,1);}
+.bar-lbl{font-size:8px;color:var(--ink3);font-family:'DM Mono',monospace;text-align:center;}
+.bar-val{font-size:8px;color:var(--ink2);font-family:'DM Mono',monospace;text-align:center;}
+.h-table{width:100%;border-collapse:collapse;font-size:12px;}
+.h-table th{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:1px;text-align:left;padding:6px 6px;border-bottom:1px solid var(--border);}
+.h-table td{padding:8px 6px;border-bottom:1px solid var(--border);color:var(--ink2);}
+.h-table td:last-child{font-family:'DM Mono',monospace;font-weight:500;color:var(--ink);}
+.h-table tr:last-child td{border-bottom:none;}
+/* routine */
+.rtn-section{margin-bottom:20px;}
+.rtn-sec-title{font-size:10px;color:var(--ink3);font-family:'DM Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+.rtn-list{display:flex;flex-direction:column;gap:6px;}
+.rtn-row{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .12s;}
+.rtn-row:active{transform:scale(.98);}
+.rtn-chk{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s;font-size:10px;color:#fff;font-weight:700;}
+.rtn-chk.done{background:var(--accent);border-color:var(--accent);}
+.rtn-chk.done::after{content:'✓';}
+.rtn-row.done-row .rtn-text{text-decoration:line-through;color:var(--ink3);}
+.rtn-text{font-size:13px;color:var(--ink2);flex:1;}
+.rtn-del{width:24px;height:24px;border-radius:50%;background:transparent;border:none;color:var(--ink3);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:color .12s;flex-shrink:0;}
+.rtn-del:active{color:var(--red);}
+.add-row{display:flex;gap:8px;margin-top:10px;}
+.add-inp{flex:1;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-family:'Noto Sans KR',sans-serif;font-size:13px;background:var(--card);outline:none;color:var(--ink);transition:border-color .12s;}
+.add-inp:focus{border-color:var(--accent);}
+.add-btn{background:var(--ink);color:#fff;border:none;border-radius:var(--r-sm);padding:10px 16px;cursor:pointer;font-size:13px;font-family:'Noto Sans KR',sans-serif;font-weight:500;flex-shrink:0;}
+.add-btn:active{opacity:.75;}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="s-home">
+  <div class="topbar">
+    <div class="topbar-title">My Tracker</div>
+    <div class="topbar-sub" id="home-week"></div>
+  </div>
+  <div class="scroll-area">
+    <div class="month-hero">
+      <div class="hero-date" id="hero-date"></div>
+      <div class="hero-title" id="hero-title"></div>
+      <div class="hero-sub" id="hero-sub"></div>
+    </div>
+    <div class="month-nav-row">
+      <div class="mnav-btn" onclick="changeVM(-1)">‹</div>
+      <div class="mnav-lbl" id="vm-lbl"></div>
+      <div class="mnav-btn" onclick="changeVM(1)">›</div>
+    </div>
+    <div class="cat-grid">
+      <div class="cat-card" onclick="openDet('sleep')">
+        <span class="cat-icon">🌙</span>
+        <div class="cat-name">수면</div>
+        <div class="cat-val" id="h-sleep">—<span class="cat-unit">h</span></div>
+      </div>
+      <div class="cat-card" onclick="openDet('study')">
+        <span class="cat-icon">📚</span>
+        <div class="cat-name">공부</div>
+        <div class="cat-val" id="h-study">—<span class="cat-unit">h</span></div>
+      </div>
+      <div class="cat-card" onclick="openDet('exercise')">
+        <span class="cat-icon">🏃</span>
+        <div class="cat-name">운동</div>
+        <div class="cat-val" id="h-exercise">—<span class="cat-unit">h</span></div>
+      </div>
+      <div class="cat-card" onclick="openDet('piano')">
+        <span class="cat-icon">🎹</span>
+        <div class="cat-name">피아노</div>
+        <div class="cat-val" id="h-piano">—<span class="cat-unit">분</span></div>
+      </div>
+      <div class="cat-card" onclick="openDet('reading')">
+        <span class="cat-icon">📖</span>
+        <div class="cat-name">독서</div>
+        <div class="cat-val" id="h-reading">—<span class="cat-unit">p</span></div>
+      </div>
+      <div class="cat-card" onclick="openDet('signal')">
+        <span class="cat-icon">💸</span>
+        <div class="cat-name">지출 신호등</div>
+        <div style="font-size:12px;margin-top:6px;line-height:1.6" id="h-signal">—</div>
+      </div>
+      <div class="cat-card cat-full" onclick="openDet('habit')">
+        <span class="cat-icon">✅</span>
+        <div class="cat-name">습관 트래커</div>
+        <div style="font-size:13px;margin-top:6px" id="h-habit">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div class="screen" id="s-detail">
+  <div class="topbar">
+    <div class="back-btn" onclick="goBack()">‹</div>
+    <div class="topbar-title" id="det-title"></div>
+    <div class="topbar-sub" id="det-sub"></div>
+  </div>
+  <div class="scroll-area" id="det-body"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="s-history">
+  <div class="topbar">
+    <div class="topbar-title">📅 월별 기록</div>
+  </div>
+  <div class="scroll-area" id="hist-body"></div>
+</div>
+
+<!-- ROUTINE -->
+<div class="screen" id="s-routine">
+  <div class="topbar">
+    <div class="topbar-title">🌅 루틴</div>
+    <div class="topbar-sub" id="rtn-date"></div>
+  </div>
+  <div class="scroll-area" id="rtn-body"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="goTab('home')">
+    <div class="nav-icon">🏠</div><div class="nav-label">홈</div>
+  </div>
+  <div class="nav-item" id="nav-history" onclick="goTab('history')">
+    <div class="nav-icon">📊</div><div class="nav-label">월별기록</div>
+  </div>
+  <div class="nav-item" id="nav-routine" onclick="goTab('routine')">
+    <div class="nav-icon">☀️</div><div class="nav-label">루틴</div>
+  </div>
+</nav>
+
+<script>
+const NOW = new Date();
+let VY = NOW.getFullYear(), VM = NOW.getMonth();
+let curDet = null;
+const MKR = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+function ld(k,d){try{const v=localStorage.getItem('tr_'+k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
+function sv(k,v){try{localStorage.setItem('tr_'+k,JSON.stringify(v));}catch(e){}}
+function mk(y,m){return y+'-'+String(m+1).padStart(2,'0');}
+function dim(y,m){return new Date(y,m+1,0).getDate();}
+function wn(d){const s=new Date(d.getFullYear(),0,1);return Math.ceil(((d-s)/86400000+s.getDay()+1)/7);}
+
+// ── HOME ──
+function initHome(){
+  document.getElementById('hero-date').textContent=NOW.getFullYear()+'.'+String(NOW.getMonth()+1).padStart(2,'0')+'.'+String(NOW.getDate()).padStart(2,'0');
+  document.getElementById('hero-title').textContent=NOW.getFullYear()+'년 '+MKR[NOW.getMonth()];
+  document.getElementById('hero-sub').textContent=NOW.getFullYear()+'년 '+wn(NOW)+'번째 주';
+  document.getElementById('home-week').textContent='WEEK '+wn(NOW);
+  updateVM();
+}
+function changeVM(d){
+  VM+=d;
+  if(VM>11){VM=0;VY++;}
+  if(VM<0){VM=11;VY--;}
+  updateVM();
+}
+function updateVM(){
+  document.getElementById('vm-lbl').textContent=VY+'년 '+MKR[VM];
+  updateSums();
+}
+function updateSums(){
+  const y=VY,m=VM;
+  // sleep avg
+  const sl=ld('sleep_'+mk(y,m),[]).filter(v=>v!==null&&v!=='').map(Number).filter(v=>!isNaN(v));
+  document.getElementById('h-sleep').innerHTML=sl.length?(sl.reduce((a,b)=>a+b,0)/sl.length).toFixed(1)+'<span class="cat-unit">h 평균</span>':'—<span class="cat-unit">h 평균</span>';
+  // study
+  const st=ld('study_'+mk(y,m),[]).filter(v=>v!==null&&v!=='').map(Number).filter(v=>!isNaN(v));
+  document.getElementById('h-study').innerHTML=st.length?(st.reduce((a,b)=>a+b,0)/60).toFixed(1)+'<span class="cat-unit">h 합계</span>':'—<span class="cat-unit">h 합계</span>';
+  // exercise
+  const ex=ld('exercise_'+mk(y,m),[]).filter(v=>v!==null&&v!=='').map(Number).filter(v=>!isNaN(v));
+  document.getElementById('h-exercise').innerHTML=ex.length?(ex.reduce((a,b)=>a+b,0)/60).toFixed(1)+'<span class="cat-unit">h 합계</span>':'—<span class="cat-unit">h 합계</span>';
+  // piano
+  const pi=ld('piano_'+mk(y,m),[]).filter(v=>v!==null&&v!=='').map(Number).filter(v=>!isNaN(v));
+  document.getElementById('h-piano').innerHTML=pi.length?pi.reduce((a,b)=>a+b,0)+'<span class="cat-unit">분 합계</span>':'—<span class="cat-unit">분 합계</span>';
+  // reading
+  const rv=ld('reading_'+mk(y,m),'');
+  document.getElementById('h-reading').innerHTML=rv?rv+'<span class="cat-unit">p</span>':'—<span class="cat-unit">p</span>';
+  // signal
+  const sg=ld('signal_'+mk(y,m),[]);
+  const sc={gray:0,green:0,yellow:0,blue:0,red:0};
+  sg.forEach(v=>{if(v){const k=v.replace('s-','');if(sc[k]!==undefined)sc[k]++;}});
+  const st2=Object.values(sc).reduce((a,b)=>a+b,0);
+  document.getElementById('h-signal').innerHTML=st2?`🩶${sc.gray} 🟢${sc.green} 🟡${sc.yellow} 🔵${sc.blue} 🔴${sc.red}`:'<span style="color:var(--ink3);font-size:11px">아직 기록 없음</span>';
+  // habit
+  const habits=ld('habits',DFLT_HABITS);
+  let tot=0,done=0;
+  habits.forEach(h=>{const d=ld('habit_'+h.id+'_'+mk(y,m),[]);tot+=h.goal;done+=d.filter(Boolean).length;});
+  document.getElementById('h-habit').innerHTML=tot?`${done}/${tot} 달성`:'<span style="color:var(--ink3);font-size:11px">습관을 추가해보세요</span>';
+}
+
+// ── DETAIL ──
+const DET_INFO={
+  sleep:{title:'🌙 수면',sub:'시간 단위'},
+  study:{title:'📚 공부',sub:'분 입력 → h 환산'},
+  exercise:{title:'🏃 운동',sub:'분 입력 → h 환산'},
+  piano:{title:'🎹 피아노',sub:'분 단위'},
+  reading:{title:'📖 독서',sub:'누적 페이지'},
+  signal:{title:'💸 지출 신호등',sub:'클릭으로 색 선택'},
+  habit:{title:'✅ 습관 트래커',sub:'달성 체크'},
+};
+function openDet(cat){
+  curDet=cat;
+  document.getElementById('det-title').textContent=DET_INFO[cat].title;
+  document.getElementById('det-sub').textContent=DET_INFO[cat].sub;
+  renderDet(cat,VY,VM);
+  showScr('detail');
+}
+function renderDet(cat,y,m){
+  const body=document.getElementById('det-body');
+  body.innerHTML='';
+  // month nav
+  const nav=document.createElement('div');nav.className='det-month-tab';
+  nav.innerHTML=`<div class="det-month-lbl">${y}년 ${MKR[m]}</div><div class="det-month-nav"><button onclick="detCM(-1)">‹</button><button onclick="detCM(1)">›</button></div>`;
+  body.appendChild(nav);
+  if(cat==='reading')rdgRender(body,y,m);
+  else if(cat==='signal')sigRender(body,y,m);
+  else if(cat==='habit')habRender(body,y,m);
+  else numRender(body,cat,y,m);
+}
+function detCM(d){
+  VM+=d;if(VM>11){VM=0;VY++;}if(VM<0){VM=11;VY--;}
+  updateVM();renderDet(curDet,VY,VM);
+}
+function numRender(body,cat,y,m){
+  const days=dim(y,m);
+  const isMC=(cat==='study'||cat==='exercise');
+  const data=ld(cat+'_'+mk(y,m),[]);
+  const vals=data.slice(0,days).map(v=>(v!==null&&v!==''&&!isNaN(v))?Number(v):null).filter(v=>v!==null);
+  const sum=vals.reduce((a,b)=>a+b,0);
+  // summary
+  const sb=document.createElement('div');sb.className='sum-bar';
+  if(cat==='sleep'){
+    sb.innerHTML=`<div class="sum-item"><div class="sum-val">${vals.length?(sum/vals.length).toFixed(1):'—'}</div><div class="sum-lbl">평균(h)</div></div><div class="sum-item"><div class="sum-val">${vals.length}</div><div class="sum-lbl">기록일</div></div>`;
+  }else if(isMC){
+    sb.innerHTML=`<div class="sum-item"><div class="sum-val">${vals.length?(sum/60).toFixed(1):'—'}</div><div class="sum-lbl">합계(h)</div></div><div class="sum-item"><div class="sum-val">${vals.length?(sum/vals.length/60).toFixed(1):'—'}</div><div class="sum-lbl">평균/일(h)</div></div><div class="sum-item"><div class="sum-val">${vals.length}</div><div class="sum-lbl">기록일</div></div>`;
+  }else{
+    sb.innerHTML=`<div class="sum-item"><div class="sum-val">${vals.length?sum:'—'}</div><div class="sum-lbl">합계(분)</div></div><div class="sum-item"><div class="sum-val">${vals.length?(sum/vals.length).toFixed(0):'—'}</div><div class="sum-lbl">평균/일</div></div><div class="sum-item"><div class="sum-val">${vals.length}</div><div class="sum-lbl">기록일</div></div>`;
+  }
+  body.appendChild(sb);
+  const card=document.createElement('div');card.className='card';
+  const grid=document.createElement('div');grid.className='day-grid';
+  for(let i=0;i<days;i++){
+    const cell=document.createElement('div');cell.className='day-cell';
+    const lbl=document.createElement('div');lbl.className='day-num';lbl.textContent=i+1;
+    const inp=document.createElement('input');inp.className='day-inp';
+    const isT=(y===NOW.getFullYear()&&m===NOW.getMonth()&&i+1===NOW.getDate());
+    if(isT)inp.classList.add('today');
+    inp.type='number';inp.min='0';inp.step=isMC?'5':'0.5';
+    inp.placeholder=isMC?'분':(cat==='sleep'?'h':'분');
+    if(data[i]!==undefined&&data[i]!==null&&data[i]!==''){inp.value=data[i];inp.classList.add('filled');}
+    cell.appendChild(lbl);cell.appendChild(inp);
+    if(isMC){
+      const badge=document.createElement('div');badge.className='conv';
+      if(inp.value)badge.textContent=(Number(inp.value)/60).toFixed(1)+'h';
+      inp.addEventListener('input',()=>{
+        inp.classList.toggle('filled',inp.value!=='');
+        badge.textContent=inp.value?(Number(inp.value)/60).toFixed(1)+'h':'';
+        updData(cat,y,m,i,inp.value);
+      });
+      cell.appendChild(badge);
+    }else{
+      inp.addEventListener('input',()=>{inp.classList.toggle('filled',inp.value!=='');updData(cat,y,m,i,inp.value);});
+    }
+    grid.appendChild(cell);
+  }
+  card.appendChild(grid);body.appendChild(card);
+}
+function updData(cat,y,m,i,val){
+  const data=ld(cat+'_'+mk(y,m),[]);
+  while(data.length<=i)data.push(null);
+  data[i]=val===''?null:Number(val);
+  sv(cat+'_'+mk(y,m),data);
+  updateSums();
+}
+function rdgRender(body,y,m){
+  const card=document.createElement('div');card.className='card';
+  const val=ld('reading_'+mk(y,m),'');
+  card.innerHTML=`<div class="reading-row"><div><div style="font-size:14px;font-weight:500">${y}년 ${MKR[m]}</div><div style="font-size:11px;color:var(--ink3);margin-top:3px">이번 달 누적 페이지</div></div><div style="display:flex;align-items:baseline;gap:4px"><input class="reading-inp" id="rdg-inp" type="number" min="0" value="${val}" placeholder="0"><span style="font-size:13px;color:var(--ink3)">p</span></div></div>`;
+  body.appendChild(card);
+  document.getElementById('rdg-inp').addEventListener('input',e=>{sv('reading_'+mk(y,m),e.target.value);updateSums();});
+}
+function sigRender(body,y,m){
+  const days=dim(y,m);
+  const data=ld('signal_'+mk(y,m),[]);
+  const ORD=[null,'s-gray','s-green','s-yellow','s-blue','s-red'];
+  const card=document.createElement('div');card.className='card';
+  const grid=document.createElement('div');grid.className='sig-grid';
+  for(let i=0;i<days;i++){
+    const cell=document.createElement('div');cell.className='sig-cell';
+    const lbl=document.createElement('div');lbl.className='day-num';lbl.textContent=i+1;
+    const btn=document.createElement('div');btn.className='sig-btn '+(data[i]||'');btn.textContent=i+1;
+    btn.onclick=()=>{
+      const cur=ORD.indexOf([...btn.classList].find(c=>c.startsWith('s-'))||null);
+      const nxt=(cur+1)%ORD.length;
+      ORD.forEach(s=>{if(s)btn.classList.remove(s);});
+      if(ORD[nxt])btn.classList.add(ORD[nxt]);
+      while(data.length<=i)data.push(null);
+      data[i]=ORD[nxt];
+      sv('signal_'+mk(y,m),data);updateSums();
+    };
+    cell.appendChild(lbl);cell.appendChild(btn);grid.appendChild(cell);
+  }
+  card.appendChild(grid);
+  const leg=document.createElement('div');leg.className='sig-legend';
+  leg.innerHTML='<div class="leg-item"><div class="leg-dot" style="background:var(--gray)"></div>무지출</div><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>~1만</div><div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div>1~3만</div><div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>3~5만</div><div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>5만↑</div>';
+  card.appendChild(leg);body.appendChild(card);
+}
+
+const DFLT_HABITS=[
+  {id:'exercise',name:'🏃 운동',goal:20},
+  {id:'reading',name:'📖 독서',goal:8},
+  {id:'blog',name:'✍️ 블로그',goal:4},
+  {id:'piano',name:'🎹 반주법',goal:8},
+];
+function habRender(body,y,m){
+  const habits=ld('habits',DFLT_HABITS);
+  const list=document.createElement('div');list.className='habit-list';
+  habits.forEach(h=>{
+    const data=ld('habit_'+h.id+'_'+mk(y,m),[]);
+    const done=data.filter(Boolean).length;
+    const pct=Math.min(Math.round(done/h.goal*100),100);
+    const item=document.createElement('div');item.className='habit-item';
+    const hdr=document.createElement('div');hdr.className='habit-hdr';
+    hdr.innerHTML=`<div class="habit-name">${h.name}</div><div class="habit-score" id="hs-${h.id}">${done}/${h.goal}</div>`;
+    item.appendChild(hdr);
+    const chks=document.createElement('div');chks.className='hchecks';
+    for(let i=0;i<h.goal;i++){
+      const c=document.createElement('div');c.className='hchk'+(data[i]?' done':'');
+      c.onclick=()=>{
+        c.classList.toggle('done');
+        while(data.length<=i)data.push(false);
+        data[i]=c.classList.contains('done');
+        sv('habit_'+h.id+'_'+mk(y,m),data);
+        const nd=data.filter(Boolean).length;
+        document.getElementById('hs-'+h.id).textContent=nd+'/'+h.goal;
+        const np=Math.min(Math.round(nd/h.goal*100),100);
+        fill.style.width=np+'%';
+        fill.style.background=np>=100?'var(--accent)':np>=60?'var(--green)':'var(--blue)';
+        document.getElementById('pl-'+h.id).textContent=np+'%';
+        updateSums();
+      };
+      chks.appendChild(c);
+    }
+    item.appendChild(chks);
+    const pr=document.createElement('div');pr.className='prog-row';
+    const track=document.createElement('div');track.className='prog-track';
+    const fill=document.createElement('div');fill.className='prog-fill';
+    fill.style.width=pct+'%';fill.style.background=pct>=100?'var(--accent)':pct>=60?'var(--green)':'var(--blue)';
+    track.appendChild(fill);pr.appendChild(track);
+    const pl=document.createElement('div');pl.className='prog-lbl';pl.id='pl-'+h.id;pl.textContent=pct+'%';
+    pr.appendChild(pl);item.appendChild(pr);list.appendChild(item);
+  });
+  body.appendChild(list);
+}
+
+// ── HISTORY ──
+function renderHist(){
+  const body=document.getElementById('hist-body');body.innerHTML='';
+  const months=[];
+  for(let i=11;i>=0;i--){
+    let dm=NOW.getMonth()-i,dy=NOW.getFullYear();
+    while(dm<0){dm+=12;dy--;}
+    months.push({y:dy,m:dm});
+  }
+  // sleep chart
+  const sc=document.createElement('div');sc.className='chart-card';sc.innerHTML='<div class="chart-title">🌙 수면 평균 (h)</div>';
+  const sb=document.createElement('div');sb.className='bar-chart';
+  const sAvgs=months.map(({y,m})=>{
+    const d=ld('sleep_'+mk(y,m),[]).filter(v=>v!==null&&!isNaN(v)).map(Number);
+    return{y,m,v:d.length?d.reduce((a,b)=>a+b,0)/d.length:0};
+  });
+  const sMax=Math.max(...sAvgs.map(d=>d.v),1);
+  sAvgs.forEach(d=>{
+    const col=document.createElement('div');col.className='bar-col';
+    const tr=document.createElement('div');tr.className='bar-track';
+    const fl=document.createElement('div');fl.className='bar-fill';
+    fl.style.height=(d.v/sMax*100)+'%';fl.style.background='var(--blue)';
+    tr.appendChild(fl);col.appendChild(tr);
+    const lb=document.createElement('div');lb.className='bar-lbl';lb.textContent=(d.m+1)+'월';
+    const vl=document.createElement('div');vl.className='bar-val';vl.textContent=d.v?d.v.toFixed(1):'';
+    col.appendChild(lb);col.appendChild(vl);sb.appendChild(col);
+  });
+  sc.appendChild(sb);body.appendChild(sc);
+
+  // study chart
+  const stc=document.createElement('div');stc.className='chart-card';stc.innerHTML='<div class="chart-title">📚 공부 합계 (h)</div>';
+  const stb=document.createElement('div');stb.className='bar-chart';
+  const stSums=months.map(({y,m})=>{
+    const d=ld('study_'+mk(y,m),[]).filter(v=>v!==null&&!isNaN(v)).map(Number);
+    return{y,m,v:d.reduce((a,b)=>a+b,0)/60};
+  });
+  const stMax=Math.max(...stSums.map(d=>d.v),1);
+  stSums.forEach(d=>{
+    const col=document.createElement('div');col.className='bar-col';
+    const tr=document.createElement('div');tr.className='bar-track';
+    const fl=document.createElement('div');fl.className='bar-fill';
+    fl.style.height=(d.v/stMax*100)+'%';fl.style.background='var(--accent2)';
+    tr.appendChild(fl);col.appendChild(tr);
+    const lb=document.createElement('div');lb.className='bar-lbl';lb.textContent=(d.m+1)+'월';
+    const vl=document.createElement('div');vl.className='bar-val';vl.textContent=d.v?d.v.toFixed(1):'';
+    col.appendChild(lb);col.appendChild(vl);stb.appendChild(col);
+  });
+  stc.appendChild(stb);body.appendChild(stc);
+
+  // table
+  const tc=document.createElement('div');tc.className='chart-card';tc.innerHTML='<div class="chart-title">월별 요약</div>';
+  const tbl=document.createElement('table');tbl.className='h-table';
+  tbl.innerHTML='<thead><tr><th>월</th><th>수면(h)</th><th>공부(h)</th><th>운동(h)</th><th>피아노(분)</th></tr></thead>';
+  const tb=document.createElement('tbody');
+  [...months].reverse().forEach(({y,m})=>{
+    const slD=ld('sleep_'+mk(y,m),[]).filter(v=>v!==null&&!isNaN(v)).map(Number);
+    const slA=slD.length?(slD.reduce((a,b)=>a+b,0)/slD.length).toFixed(1):'—';
+    const stD=ld('study_'+mk(y,m),[]).filter(v=>v!==null&&!isNaN(v)).map(Number);
+    const stS=stD.length?(stD.reduce((a,b)=>a+b,0)/60).toFixed(1):'—';
+    const exD=ld('exercise_'+mk(y,m),[]).filter(v=>v!==null&&!isNaN(v)).map(Number);
+    const exS=exD.length?(exD.reduce((a,b)=>a+b,0)/60).toFixed(1):'—';
+    const piD=ld('piano_'+mk(y,m),[]).filter(v=>v!==null&&!isNaN(v)).map(Number);
+    const piS=piD.length?piD.reduce((a,b)=>a+b,0):'—';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${y}.${String(m+1).padStart(2,'0')}</td><td>${slA}</td><td>${stS}</td><td>${exS}</td><td>${piS}</td>`;
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);tc.appendChild(tbl);body.appendChild(tc);
+}
+
+// ── ROUTINE ──
+const DFLT_MRN=['💊 비타민','📋 계획 세우기','🌟 확언','🏃 운동','🗣️ 영어 (스픽)'];
+const DFLT_NGT=['🎹 피아노 5~10분','📚 공부','🦉 듀오링고 (일본어)','📓 일기'];
+
+function renderRtn(){
+  const body=document.getElementById('rtn-body');body.innerHTML='';
+  const dk=`rtn_${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}-${String(NOW.getDate()).padStart(2,'0')}`;
+  const chks=ld(dk,{});
+  const mrn=ld('rtn_morning',DFLT_MRN);
+  const ngt=ld('rtn_night',DFLT_NGT);
+  document.getElementById('rtn-date').textContent=`${NOW.getMonth()+1}/${NOW.getDate()}`;
+
+  function secRender(title,items,sk){
+    const sec=document.createElement('div');sec.className='rtn-section';
+    const hdr=document.createElement('div');hdr.className='rtn-sec-title';hdr.textContent=title;sec.appendChild(hdr);
+    const list=document.createElement('div');list.className='rtn-list';
+    items.forEach((item,idx)=>{
+      const row=document.createElement('div');row.className='rtn-row'+(chks[sk+'-'+idx]?' done-row':'');
+      const chk=document.createElement('div');chk.className='rtn-chk'+(chks[sk+'-'+idx]?' done':'');
+      const txt=document.createElement('div');txt.className='rtn-text';txt.textContent=item;
+      const del=document.createElement('button');del.className='rtn-del';del.textContent='×';
+      del.onclick=e=>{e.stopPropagation();items.splice(idx,1);sv('rtn_'+sk,items);renderRtn();};
+      row.onclick=()=>{const k=sk+'-'+idx;chks[k]=!chks[k];sv(dk,chks);renderRtn();};
+      row.appendChild(chk);row.appendChild(txt);row.appendChild(del);list.appendChild(row);
+    });
+    const ar=document.createElement('div');ar.className='add-row';
+    const ai=document.createElement('input');ai.className='add-inp';ai.placeholder='+ 항목 추가...';
+    const ab=document.createElement('button');ab.className='add-btn';ab.textContent='추가';
+    ab.onclick=()=>{if(!ai.value.trim())return;items.push(ai.value.trim());sv('rtn_'+sk,items);ai.value='';renderRtn();};
+    ai.addEventListener('keydown',e=>{if(e.key==='Enter')ab.click();});
+    ar.appendChild(ai);ar.appendChild(ab);list.appendChild(ar);sec.appendChild(list);body.appendChild(sec);
+  }
+  secRender('☀️ MORNING',mrn,'morning');
+  secRender('🌙 NIGHT',ngt,'night');
+}
+
+// ── SCREENS ──
+function showScr(name){
+  document.getElementById('s-home').classList.remove('active');
+  document.getElementById('s-detail').classList.add('active');
+}
+function goBack(){
+  document.getElementById('s-detail').classList.remove('active');
+  document.getElementById('s-home').classList.add('active');
+  updateSums();
+}
+function goTab(tab){
+  ['home','history','routine'].forEach(t=>{
+    document.getElementById('s-'+t).classList.toggle('active',t===tab);
+    const n=document.getElementById('nav-'+t);if(n)n.classList.toggle('active',t===tab);
+  });
+  document.getElementById('s-detail').classList.remove('active');
+  if(tab==='history')renderHist();
+  if(tab==='routine')renderRtn();
+  if(tab==='home'){initHome();}
+}
+
+initHome();
+</script>
+</body>
+</html>
